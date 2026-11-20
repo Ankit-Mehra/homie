@@ -22,6 +22,12 @@ grounded conversations, maintenance scheduling, confirmed service history,
 email-code onboarding, and push delivery are still planned. No paid provider
 calls are made by the current foundation.
 
+In offline mode, troubleshooting must use only local manuals, bundled reference
+material, and structured local data. The app must not claim to have consulted
+online sources or an AI provider. OpenAI, Supabase, web search, push
+notifications, and multi-device household sync are optional connected-mode
+features.
+
 
 ## Repository layout
 

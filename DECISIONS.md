@@ -7,37 +7,45 @@ Status: Product direction, technology stack, and initial beta behavior agreed; d
 
 A household inventory and support assistant for the durable items someone owns: appliances, tools, devices, and eventually vehicles and other non-perishable items with user manuals.
 
-Users identify their items, get answers grounded in relevant manuals and online sources, and track maintenance, repairs, and reminders.
+Users identify their items, get answers grounded in manuals and local reference
+material, and track maintenance, repairs, and reminders. A connected deployment
+may add online sources and hosted AI later, but those services are not required
+for the offline desktop prototype.
 
-Example: A user reports that their Shark vacuum has become noisy. The assistant identifies the exact model, asks relevant follow-up questions, explains possible causes using cited sources, and provides model-specific filter cleaning or replacement guidance when supported. Maintenance history informs future answers and reminders.
+Example: A user enters the model of a Shark vacuum, optionally provides a local
+manual, and reports that it has become noisy. The assistant asks relevant
+follow-up questions and provides cited checks only from available local
+material. If no applicable source is available, it explains the gap and gives
+limited, clearly labeled general guidance. Maintenance history informs future
+answers and reminders.
 
 ## Agreed first release
 
-- Public product, starting with a free beta with capped AI usage. No billing integration initially; limits are still to be defined.
+- Optional connected public beta with capped AI usage. No billing integration initially; limits are still to be defined.
 - Launch audience: Canada and the US, with an English interface.
 - Browser app first for the offline-compatible prototype. Installable iOS and Android clients remain a later distribution target.
 - Broad inventory: users can catalog any durable item. Detailed troubleshooting and maintenance support initially focus on household appliances, tools, and electronics. Broader category support, including vehicles, comes later.
 - Troubleshooting is the strongest initial experience, supported by inventory and preventive maintenance features.
-- Users can ask for help from a saved item or start with a problem and identify and confirm a new item during the conversation. Adding an inventory item first is not required.
-- Add items through a photo of the model label or typed brand/model. Users confirm the identified model and can optionally upload a manual.
+- Users can ask for help from a saved item or start with a problem and enter and confirm a new item's details during the conversation. Adding an inventory item first is not required.
+- Add items through typed brand/model details or a model-label photo. In offline mode, the photo is stored for review and the user confirms the typed model; automatic visual identification is not required. Users can upload a local manual for grounded guidance.
 - Item details include name, brand/model, category, room, photos, and manuals, plus optional serial number, purchase date, warranty expiry, and receipt.
-- Home shows a household overview with upcoming maintenance, recent items, and Ask for help. Troubleshooting uses conversational steps and accepts text and photos; audio/video analysis is deferred.
-- Shared households: members access the same inventory, troubleshooting history, and maintenance tasks.
-- Maintenance schedules, completion history, and reminders through push notifications and in-app tasks. Email reminders are outside the initial scope.
+- Home shows a household overview with upcoming maintenance, recent items, and Ask for help. Troubleshooting uses conversational steps and accepts text and photos; offline visual interpretation, audio analysis, and video analysis are deferred.
+- Offline desktop mode supports one local household in SQLite. A connected deployment may support authenticated members sharing inventory, troubleshooting history, and maintenance tasks across devices.
+- Maintenance schedules, completion history, and in-app reminders work offline. Push notifications require a connected deployment; email reminders are outside the initial scope.
 
 ## Beta access and operating budget
 
 - Total operating budget: US$100 per month for the whole app across all users, not per user.
-- This budget includes hosting, database and file storage, AI requests, web search, and transactional email. It excludes development time and app-store registration fees.
+- This budget covers optional connected-mode hosting, database and file storage, AI requests, web search, and transactional email. It excludes development time and app-store registration fees.
 - Anyone can register interest through a waitlist; admit users in small batches as measured costs allow.
 - Exact user counts, per-user allowances, spending controls, and behavior when limits are reached remain to be defined. The budget is a planning ceiling, not a validated cost estimate.
 
 ## Sign-in and shared households
 
-- Sign in using a one-time code sent by email.
-- Each user belongs to one household in the beta. Multiple-household switching is outside the initial scope.
-- Use owner and member roles. Everyone can manage items and maintenance; only the owner manages membership or deletes the household.
-- Members share household inventory, troubleshooting history, and maintenance tasks. Invitation and ownership-transfer details remain open.
+- Offline desktop mode uses the development-only local fixture authentication; it does not require email or a network connection.
+- Connected deployments may use one-time email-code authentication.
+- Offline desktop mode uses one local household. Connected deployments may support owner and member roles, with members sharing inventory, troubleshooting history, and maintenance tasks.
+- Everyone can manage items and maintenance in connected mode; only the owner manages membership or deletes the household. Invitation and ownership-transfer details remain open.
 
 ## Maintenance schedule approval
 
@@ -50,15 +58,13 @@ Example: A user reports that their Shark vacuum has become noisy. The assistant 
 
 ## Sources and answer behavior
 
-- Manufacturer manuals and official guidance anchor device-specific maintenance and safety instructions.
-- Automatic manual discovery is a core requirement of the first working prototype: an agentic process uses device details supplied as text or photos to identify the model and find and retrieve applicable official documentation. Manual upload is optional, never a prerequisite; an upload-only prototype does not meet the intended scope.
-- Research official guidance when adding an item, then expand to community sources when a question requires it. Do not perform exhaustive web research for every item upfront.
-- Supplement with accessible public web sources, including blogs and Reddit results when available. Dedicated or guaranteed Reddit API access is not a launch requirement.
-- Provide source citations and distinguish official instructions from community experiences and possible explanations.
-- Establish the device model before presenting model-specific instructions; ask follow-up questions when needed.
+- Offline desktop mode grounds device-specific maintenance and safety guidance in user-uploaded manuals, bundled local reference material, and structured local data. It must not claim to have searched the internet.
+- A connected deployment may use manufacturer manuals, official guidance, and other public sources through an optional retrieval pipeline. Live discovery is not an offline prototype requirement.
+- Manual upload is a supported offline path for exact-model guidance. If no applicable local manual is available, explain the gap and offer only clearly labeled general checks.
+- Provide source citations when local material includes page, section, or document metadata, and distinguish official instructions from community experiences and possible explanations.
+- Establish and confirm the device model before presenting model-specific instructions; in offline mode this is based on typed details and user confirmation.
 - Account for recorded maintenance when troubleshooting or suggesting future work.
-- If the exact-model manual cannot be found, explain the gap and offer clearly labeled general checks. Withhold instructions requiring exact-model verification rather than blocking all help.
-- Source availability is not guaranteed. Detailed retrieval, conflict handling, and boundaries for unsupported or unsafe instructions remain to be designed.
+- Source availability is not guaranteed. Detailed connected retrieval, conflict handling, and boundaries for unsupported or unsafe instructions remain to be designed.
 
 ## Agreed technology and hosting
 
@@ -67,15 +73,19 @@ Example: A user reports that their Shark vacuum has become noisy. The assistant 
 | Browser app | Dependency-free browser client served by the FastAPI backend |
 | Mobile apps | React Native with Expo and TypeScript; transition client retained under `mobile/` |
 | Backend | Python with FastAPI; no C# backend |
-| LLM provider | OpenAI API; exact models and tools remain to be selected |
-| API and background processing | Railway |
+| LLM provider | Optional connected-mode OpenAI API; not required for the offline prototype |
+| API and background processing | Local FastAPI and worker for development; Railway is an optional deployment target |
 | Local database | SQLite via SQLAlchemy/Alembic |
-| Deployment database | Supabase-hosted PostgreSQL |
-| Authentication and file storage | Supabase |
+| Deployment database | Optional Supabase-hosted PostgreSQL |
+| Authentication and file storage | Local fixture and filesystem/database in offline mode; optional Supabase in connected mode |
 | Supporting public pages | Vercel only if needed for privacy, support, account deletion, or other supporting pages |
 | Mobile distribution | Apple App Store and Google Play |
 
-Supabase was selected for the combined database, authentication, and storage offering, rather than database price alone. PostgreSQL and Supabase are not competing database engines: Supabase hosts PostgreSQL. The accepted starting approach is to use the free tier during development and budget for Pro at public launch, subject to checking current pricing and requirements.
+Supabase remains a possible connected deployment for combined database,
+authentication, and storage. It is not a prerequisite for local browser
+development. PostgreSQL and Supabase are not competing database engines:
+Supabase hosts PostgreSQL. Any hosted-service pricing and requirements remain
+deployment decisions rather than desktop acceptance criteria.
 
 Maintainability, scalability, browser performance, eventual mobile performance, and controlled operating costs are priorities. The principal has experience with Python, C#, Terraform, and Azure, but selected Railway and Vercel instead of Azure hosting. Infrastructure-as-code tooling has not yet been selected for this stack.
 
@@ -85,15 +95,15 @@ Maintainability, scalability, browser performance, eventual mobile performance, 
 - Establish backend/frontend testing and CI from initial scaffolding; include integration, household-isolation, contract, and core browser journey tests.
 - Follow the detailed maintainability, DRY, security, reliability, and definition-of-done requirements in specification.md section 9.
 - Start with one modular backend and separately running background workers rather than microservices.
-- Run manual discovery, document processing, and reminder preparation outside interactive API requests.
+- Run local document processing and reminder preparation outside interactive API requests. Run online manual discovery only in connected deployments.
 - Use an API contract to keep the Python backend and browser client aligned; keep the transition mobile client compatible with the same contract.
 - Verify browser performance first; restore cross-platform mobile performance checks if native distribution resumes.
-- Reuse verified public research for the same device model across households to reduce costs, while keeping household photos, uploaded files, chats, and maintenance history private to that household. Detailed cache and access-control design remains open.
+- Reuse verified public research in connected mode for the same device model across households to reduce costs, while keeping household photos, uploaded files, chats, and maintenance history private to that household. Offline mode uses only local material. Detailed cache and access-control design remains open.
 
 ## Open decisions for the next session
 
 - Detailed onboarding, inventory, chat, maintenance, and household-sharing flows.
-- OpenAI model selection, search/retrieval integration, document processing, and model-identification approach.
+- Optional connected-mode OpenAI model selection, search/retrieval integration, document processing, and model-identification approach.
 - Detailed behavior for uncertain model matches, conflicting sources, missing-manual fallback, and unsafe troubleshooting requests.
 - Maintenance schedule derivation, editing and approval flows, time zones, reminder timing, and delivery behavior.
 - Email-code authentication flow, household invitations and ownership transfer, privacy controls, and account/data deletion.
@@ -101,7 +111,10 @@ Maintainability, scalability, browser performance, eventual mobile performance, 
 - Database schema, API contracts, background job mechanism, and deployment workflow.
 - Testing and acceptance criteria, implementation milestones, and app-store release preparation.
 
-Next step: resolve live discovery integrations and initial data/API contracts, then implement the prototype foundation with tests. See specification.md section 10 for stage-specific readiness gaps.
+Next step: implement and validate the offline prototype with local reference
+material and initial data/API contracts. Resolve live discovery integrations as
+an optional connected-mode follow-up. See specification.md section 10 for
+stage-specific readiness gaps.
 
 ## Current project state
 
@@ -113,7 +126,7 @@ The project directory was empty before this decision record was created. No appl
 - SQLAlchemy owns persistence; Alembic is the single migration owner. PostgreSQL remains the deployment target; SQLite enables isolated local development without external accounts.
 - Initial inventory requires a name, brand, model and category. These are foundation constraints, pending the incomplete-identification conversational flow.
 - Model confirmation is a separate explicit mutation. Documentation requests require confirmation and are idempotent per household/item.
-- Research state is durable in PostgreSQL/SQLite. The foundation worker returns an honest unavailable state until the real provider pipeline lands. This does not satisfy live-discovery acceptance.
+- Research state is durable in PostgreSQL/SQLite. The foundation worker returns an honest unavailable state for connected discovery until a real provider pipeline lands; offline answers use only local material.
 - PostgreSQL tables use RLS with no direct-client grants/policies; all access goes through authenticated backend services. Local fixture authentication is disabled by default and forbidden outside development.
 - The browser client uses same-origin fetch calls and local SQLite by default; the transition mobile client continues to use TanStack Query. The browser app is local-only and has not been publicly deployed.
 

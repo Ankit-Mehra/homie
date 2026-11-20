@@ -1,20 +1,20 @@
 # Household support app specification
 
 Last updated: 2026-09-18
-Status: Product scope and engineering standards are defined for starting the prototype foundation. Live discovery integration and public-beta details remain open; this is not yet a complete implementation specification.
+Status: Product scope and engineering standards are defined for starting the offline prototype foundation. Connected discovery integration and public-beta details remain optional/open; this is not yet a complete implementation specification.
 
 This document develops the decisions recorded in [DECISIONS.md](DECISIONS.md). Requirements marked confirmed reflect agreed product choices. Proposed details and open questions are not final commitments. Continue updating this document as design decisions are made.
 
 ## 1. Product goals and release scope — confirmed
 
-Help households catalog durable possessions, troubleshoot problems using relevant sources, and maintain those possessions through approved schedules and reminders.
+Help households catalog durable possessions, troubleshoot problems using local manuals and reference material, and maintain those possessions through approved schedules and in-app reminders. Connected deployments may add online sources and hosted AI later.
 
 - Launch a browser app for the offline-compatible prototype; installable iOS and Android clients remain a later distribution target.
 - Initial audience: Canada and the US; English interface.
 - Catalog any durable item, with detailed support initially focused on household appliances, tools, and electronics. Expanded support for vehicles and other categories comes later.
 - Prioritize troubleshooting, supported by inventory and maintenance history.
-- Free public beta with capped AI usage and waitlist admissions in batches; no billing initially.
-- Total monthly operating budget: US$100 across all users, including hosting, data/storage, AI, search, and transactional email. Excludes development time and app-store registration.
+- Optional connected beta with capped AI usage and waitlist admissions in batches; no billing initially.
+- Total monthly operating budget: US$100 across all users for optional hosting, data/storage, AI, search, and transactional email. Excludes development time and app-store registration.
 
 ## 2. Screens and user journeys
 
@@ -25,22 +25,22 @@ The home screen is a household overview showing upcoming maintenance, recent ite
 ### Confirmed troubleshooting journey
 
 1. Start with a problem from the household overview, or ask for help from a saved item.
-2. Select an existing item or identify a new one through typed brand/model or a model-label photo. Confirm the match; prior inventory entry is not required.
+2. Select an existing item or enter a new one through typed brand/model details or a model-label photo. In offline mode, confirm the typed model; prior inventory entry is not required.
 3. Clarify symptoms through targeted conversational questions.
-4. Offer a brief explanation and a few relevant, sourced checks at a time.
+4. Offer a brief explanation and a few relevant checks at a time, sourced from local manuals or reference material in offline mode.
 5. Adapt subsequent questions and checks to the user's reported results and recorded maintenance history.
 
-Users can attach text and photos of parts, damage, or error displays. Treat visual interpretations as tentative and request confirmation where needed. Audio and video analysis are outside the beta scope.
+Users can attach text and photos of parts, damage, or error displays. In offline mode, store photos for review without automatic visual conclusions. Treat any future visual interpretations as tentative and request confirmation where needed. Audio and video analysis are outside the offline prototype scope.
 
 When a user reports completed maintenance in chat, propose the work and completion date and save it to service history only after user confirmation. Conversation closure and linking the entry to a scheduled task remain open.
 
 ### Confirmed item entry
 
-- Support typed brand/model and model-label photos.
-- Require user confirmation of identified model matches before relying on them for model-specific guidance.
-- Allow optional manual uploads.
-- Automatic manual discovery is the primary path, including in the first working prototype. Use user-provided text or photos to identify the device, confirm its model, and search for and retrieve relevant official documentation through an agentic process. A user upload is optional and must not be a prerequisite for troubleshooting.
-- Begin with official guidance discovery; expand research when a question requires other sources.
+- Support typed brand/model details and model-label photos.
+- Require user confirmation of model details before relying on them for model-specific guidance. Offline mode uses typed details and user confirmation; automatic photo identification is optional future functionality.
+- Allow optional local manual uploads.
+- Ground offline answers only in user-uploaded manuals, bundled local reference material, and structured local data. Online manual discovery and retrieval are optional connected-mode capabilities, not prerequisites for desktop acceptance.
+- In connected mode, begin with official guidance discovery and expand research when a question requires other sources.
 - Support name, brand/model, category, room, photos, and manuals, plus optional serial number, purchase date, warranty expiry, and receipt.
 - Required versus optional core fields and incomplete-identification behavior remain open.
 
@@ -49,7 +49,7 @@ When a user reports completed maintenance in chat, propose the work and completi
 - Present proposed tasks, supporting sources, and intervals for review and adjustment.
 - Activate reminders only after the user approves the schedule.
 - When the last completion date is unknown, ask for a last service date or a chosen first due date. Keep the task unscheduled until the user chooses.
-- Provide push notifications and in-app tasks; no maintenance email reminders initially.
+- Provide in-app tasks and reminders offline. Push notifications require a connected deployment; no maintenance email reminders initially.
 - Assign each task to one reminder recipient, defaulting to the person activating the task. Allow reassignment and keep the task visible to everyone in-app.
 - Task completion, recurrence calculation, snoozing, reminder timing, and handling recipient departure remain open.
 
@@ -57,20 +57,20 @@ When a user reports completed maintenance in chat, propose the work and completi
 
 ### Identity and households — confirmed
 
-- Authenticate using a one-time email code.
-- A user belongs to one household in the beta.
-- Support owner and member roles. Both can manage items and maintenance; only the owner manages membership and deletes the household.
-- Share inventory, troubleshooting history, and maintenance tasks within the household.
+- Offline desktop mode uses the development-only local fixture authentication; connected deployments may authenticate using a one-time email code.
+- Offline desktop mode uses one local household. Connected deployments may support owner and member roles.
+- Both connected-mode roles can manage items and maintenance; only the owner manages membership and deletes the household.
+- Share inventory, troubleshooting history, and maintenance tasks within a connected household. Cross-device sharing is not required for offline desktop acceptance.
 - Invitation, owner departure/transfer, and account-deletion flows remain open.
 
 ### Sources and answer quality — confirmed
 
-- Anchor model-specific maintenance and safety guidance in manufacturer manuals and official sources.
-- Supplement with accessible blogs and public community sources, including Reddit when available; guaranteed Reddit integration is not required.
-- Cite sources and distinguish official instructions, community experiences, and possible explanations.
-- If an exact-model manual is missing, explain the limitation and provide clearly labeled general checks. Withhold instructions requiring exact-model verification.
-- Do not conduct exhaustive community research on every item addition.
-- Detailed conflict resolution, source freshness, model/region matching, and unsafe-request handling remain open.
+- Offline desktop mode anchors model-specific maintenance and safety guidance in local manuals, bundled reference material, and structured local data.
+- Connected deployments may supplement local material with manufacturer manuals, official guidance, blogs, and public community sources; guaranteed Reddit integration is not required.
+- Cite available source metadata and distinguish official instructions, community experiences, and possible explanations.
+- If an exact-model manual is missing locally, explain the limitation and provide clearly labeled general checks. Withhold instructions requiring exact-model verification.
+- Do not conduct online research in offline mode or claim that a source was retrieved when it was not.
+- Detailed connected retrieval, conflict resolution, source freshness, model/region matching, and unsafe-request handling remain open.
 
 ## 4. Data and architecture
 
@@ -81,23 +81,23 @@ When a user reports completed maintenance in chat, propose the work and completi
 | Web client | Dependency-free browser client served by FastAPI |
 | Mobile client | React Native, Expo, TypeScript (transition/legacy client) |
 | API | Python, FastAPI |
-| LLM provider | OpenAI API; exact models and tool configuration remain to be selected |
-| API and background hosting | Railway |
+| LLM provider | Optional connected-mode OpenAI API; not required for offline acceptance |
+| API and background hosting | Local FastAPI and worker for development; Railway is an optional deployment target |
 | Local database | SQLite via SQLAlchemy/Alembic |
-| Deployment database | Supabase PostgreSQL |
-| Authentication and file storage | Supabase |
+| Deployment database | Optional Supabase PostgreSQL |
+| Authentication and file storage | Local fixture and local storage in offline mode; optional Supabase in connected mode |
 | Supporting public pages, if needed | Vercel |
 | Distribution | Apple App Store and Google Play |
 
 ### Engineering baseline
 
 - One modular backend with separately running background workers.
-- Background processing for document discovery, extraction, and reminder preparation.
+- Background processing for local document extraction and reminder preparation. Online discovery is only for connected deployments.
 - An API contract connecting the Python backend and TypeScript client.
 - Reuse verified public model research across households; keep household uploads, photos, conversations, and service history private to their household.
 - Verify performance on iOS and lower-end Android devices.
 
-Section 9 defines required engineering boundaries and quality controls. Concrete database schemas, endpoint payloads, job technology, retention/deletion behavior, offline behavior, exact OpenAI models, search/retrieval integration, and deployment tooling remain to be specified.
+Section 9 defines required engineering boundaries and quality controls. Concrete database schemas, endpoint payloads, job technology, retention/deletion behavior, offline behavior, and deployment tooling remain to be specified. Exact OpenAI models and search/retrieval integration are optional connected-mode decisions.
 
 ## 5. Cost controls and beta operation
 
@@ -124,11 +124,11 @@ These scenarios derive from confirmed requirements. They are specification crite
 | --- | --- |
 | Open the app after onboarding | Show the household overview with upcoming maintenance, recent items, and Ask for help. |
 | Start help without an inventory item | Allow problem entry and identify/confirm the item during the conversation. |
-| Add a model-label photo | Ask the user to confirm the identified model before model-specific guidance. |
-| Report a noisy vacuum | Ask targeted questions and provide a few sourced checks at a time, adapting to reported results. |
-| Attach a troubleshooting photo | Accept the photo without presenting uncertain visual conclusions as established facts. |
+| Add a model-label photo | Store the photo and request typed model details and user confirmation before model-specific guidance in offline mode. |
+| Report a noisy vacuum | Ask targeted questions and provide a few checks from available local material at a time, adapting to reported results. |
+| Attach a troubleshooting photo | Accept and store the photo without presenting automatic visual conclusions as established facts in offline mode. |
 | Exact manual unavailable | Explain the gap, offer limited general checks, and withhold instructions requiring exact-model verification. |
-| Suggest maintenance | Show tasks, intervals, and sources for review; reminders remain inactive until approval. |
+| Suggest maintenance | Show tasks, intervals, and sources for review; in-app reminders remain inactive until approval. |
 | Last maintenance date unknown | Ask for a last service date or first due date; leave the task unscheduled without a choice. |
 | Member manages household items | Permit item and maintenance management; restrict membership management and household deletion to the owner. |
 | User reports completed maintenance in chat | Propose the work and date; save history only after confirmation. |
@@ -150,25 +150,25 @@ These are requirements for implementation, not pending proposals. The separate d
 
 ## 8. Prototype readiness and remaining decisions
 
-There is enough product detail to design the core prototype journey. Automatic device identification and manual discovery are required in the first working prototype; an upload-only or simulated-research flow does not demonstrate the core product. Detailed integration choices remain open. Prototype readiness does not establish readiness for a public beta.
+There is enough product detail to design the offline core prototype journey. Typed model confirmation, local reference material, cited troubleshooting, maintenance review, and confirmed history are required for desktop acceptance. Automatic device identification, online manual discovery, hosted AI, push notifications, and multi-device household sync are optional connected-mode capabilities. Prototype readiness does not establish readiness for a public beta.
 
 ### First working prototype — required core journey
 
 - Build in the agreed browser-first stack and keep the API independent of the client runtime.
 - Cover household overview, inventory/item details, add-item flow, conversational troubleshooting with source displays, schedule review, and confirmed maintenance-history recording.
-- Accept a device photo or typed details, ask for missing identifying information, and confirm the model with the user.
-- Use an agentic discovery process to find and retrieve official manuals or support documentation, check applicability to the confirmed model, and prepare the material for grounded OpenAI answers with source references.
-- Do not treat a search result or a plausible document title as a retrieved and verified manual. If discovery fails, explain the gap and provide the previously agreed limited general help; optionally offer manual upload.
-- Demonstrate one complete journey without a user-uploaded manual: identify an item, discover its documentation, ask about a problem, review suggested maintenance, and confirm completed work.
-- Manual upload remains an optional alternative. Simulated research may support development fixtures but cannot satisfy acceptance of this core journey.
-- Exact model/tool choices, integration sequencing, and push-notification delivery scope for the prototype remain to be finalized.
+- Accept a device photo or typed details, ask for missing identifying information, and confirm the model with the user. Offline acceptance uses typed details and confirmation rather than automatic image identification.
+- Use a user-uploaded manual, bundled local reference material, or structured local data for grounded troubleshooting with source references.
+- Do not claim that online documentation or an AI provider was consulted in offline mode. If local material is missing, explain the gap and provide only the previously agreed limited general help.
+- Demonstrate one complete offline journey with local reference material: identify and confirm an item, ask about a problem, review suggested maintenance, and confirm completed work.
+- Online discovery, hosted OpenAI answers, automatic visual identification, push-notification delivery, and multi-device household sharing remain optional connected-mode capabilities.
+- Exact connected-mode model/tool choices and integration sequencing remain to be finalized.
 
 ### Remaining decisions for live services and beta
 
 1. Required item fields, incomplete model identification, conversation closure, and scheduled-task/history linkage.
 2. Reminder timing, recurrence, snoozing, and recipient departure.
 3. Onboarding, household lifecycle, privacy, deletion, and offline behavior.
-4. OpenAI model selection, search/retrieval integration, retrieval behavior, safety boundaries, and a measured cost model.
+4. Optional connected-mode OpenAI model selection, search/retrieval integration, retrieval behavior, safety boundaries, and a measured cost model.
 5. Data/API contracts, operational requirements, acceptance thresholds, and implementation milestones.
 
 
@@ -191,7 +191,7 @@ These requirements apply from the first prototype feature to both backend and mo
 - Routes validate input, obtain authenticated context, call services, and map results/errors. Domain decisions belong in services; SQL and vendor calls do not belong in route handlers.
 - Inject database sessions, provider adapters, clock, and job submission dependencies so tests can replace external boundaries. Do not introduce an interface for every trivial class.
 - Use typed Python and Pydantic validation at boundaries. Keep database entities distinct from public response schemas to avoid leaking internal or sensitive fields.
-- Isolate OpenAI, search, document fetching/parsing, storage, email, and push integrations behind narrow adapters. Validate external responses before acting on them.
+- Isolate optional connected-mode OpenAI, search, document fetching/parsing, storage, email, and push integrations behind narrow adapters. Validate external responses before acting on them.
 - Use explicit transaction boundaries for related writes, database constraints for invariants, and version-controlled migrations. Choose one migration owner/tool before creating the first schema; do not maintain competing migration histories.
 - Run durable discovery, document processing, and notification work through persisted jobs. Process restarts must not silently lose accepted work. Return job status rather than holding a request open for an entire discovery run.
 - Use timeouts, bounded retries with backoff, and idempotency for retried jobs and mutations. Avoid blocking network calls or CPU-heavy parsing on the async event loop.
@@ -211,8 +211,8 @@ These requirements apply from the first prototype feature to both backend and mo
 ### 9.4 Data isolation, security, and agent boundaries
 
 - Verify authentication and household membership on every protected operation. Derive authorization from validated server context, not a client-supplied household ID alone.
-- Enable and test RLS for exposed Supabase tables and storage policies for private objects. Service credentials and privileged database connections can bypass RLS: backend and worker authorization must remain explicit and independently tested.
-- Keep OpenAI keys and privileged Supabase credentials on the server. Use secure mobile token storage, validated environment configuration, and separate development/test/production resources. Commit example variable names, never secret values.
+- For connected deployments, enable and test RLS for exposed Supabase tables and storage policies for private objects. Service credentials and privileged database connections can bypass RLS: backend and worker authorization must remain explicit and independently tested.
+- When connected services are enabled, keep OpenAI keys and privileged Supabase credentials on the server. Use secure mobile token storage, validated environment configuration, and separate development/test/production resources. Commit example variable names, never secret values.
 - Keep household files private with scoped, short-lived access links. Do not share uploaded manuals, photos, chats, or maintenance records through the public model-research cache.
 - Treat web pages, PDFs, images, and model output as untrusted data, never executable instructions. Tool permissions and household authorization must not be alterable by retrieved text.
 - Bound each agent run by tool-call count, duration, document size, token allowance, and cost. Validate tool arguments and require the already-agreed user approvals for schedules and maintenance records.
@@ -223,10 +223,10 @@ These requirements apply from the first prototype feature to both backend and mo
 ### 9.5 Testing from the start
 
 - Set up test runners and CI with the initial scaffolding. Ship tests with each meaningful behavior, not as a final project phase. Add a regression test for fixed behavioral defects where practical.
-- Backend: pytest for business rules and service behavior; API tests through FastAPI's test client or HTTPX; integration tests against isolated PostgreSQL/Supabase-compatible resources for migrations, queries, constraints, transactions, and authorization.
+- Backend: pytest for business rules and service behavior; API tests through FastAPI's test client or HTTPX; local tests use SQLite, while connected/deployment CI may use isolated PostgreSQL/Supabase-compatible resources for migrations, queries, constraints, transactions, and authorization.
 - Frontend: browser tests with Playwright in the coding workspace plus focused unit tests for user-visible behavior, forms, accessibility, error states, and async flows. Mock network boundaries rather than internal implementation details.
 - Add contract checks for OpenAPI/client drift and browser end-to-end flows. If native distribution resumes, restore the mobile-specific Maestro, camera, notification, and deep-link checks before release.
-- Use deterministic fixtures and fake providers in routine CI. Keep real OpenAI/search smoke tests opt-in with explicit cost limits; a live-provider test must not run automatically on every pull request.
+- Use deterministic local fixtures and fake providers in routine CI. Keep connected OpenAI/search smoke tests opt-in with explicit cost limits; a live-provider test must not run automatically on every pull request.
 - Maintain AI/retrieval evaluations for exact-model matches, ambiguous labels, regional variants, missing manuals, conflicting sources, grounded citations, image uncertainty, malicious document instructions, and unsafe repair requests. Combine deterministic assertions with reviewed reference cases; do not rely solely on an LLM judge.
 - Required negative tests include cross-household access to records/files/jobs/chats, member attempts at owner-only actions, expired authentication, malformed files, blocked fetch destinations, provider timeouts/rate limits, exhausted budgets, duplicate job delivery, and interrupted processing.
 - Required workflow tests include approval before schedule activation, confirmation before history writes, date/time-zone boundaries, no duplicate reminders, and maintaining recorded outcomes after retries. Specify exact date/recurrence policies before implementing those tests.
@@ -260,11 +260,11 @@ These sources inform framework integration; the project requirements above inclu
 
 ## 10. Readiness audit
 
-The core product direction is sufficient to start repository scaffolding, module boundaries, test infrastructure, and screen development. It is not yet sufficient to claim a complete working prototype or launch-ready beta. A foundation implementation now exists in `backend/` and `mobile/`, with inventory/isolation tests and native form tests. Live discovery and the complete acceptance journey remain unimplemented; see README.md for exact implementation and verification status.
+The core product direction is sufficient to start repository scaffolding, module boundaries, test infrastructure, and screen development. It is not yet sufficient to claim a complete working prototype or launch-ready beta. A foundation implementation now exists in `backend/` and `web/`, with inventory/isolation tests and a browser smoke test. The offline journey is the primary acceptance path; live discovery and connected services remain optional and unimplemented. See README.md for exact implementation and verification status.
 
 | Stage | What must be settled or verified |
 | --- | --- |
-| Before live discovery integration | Exact OpenAI models/tools, search and fetching approach, PDF/HTML extraction, model-match evidence, failure behavior, bounded agent execution, API keys, and a small real-device source evaluation. |
+| Before optional connected discovery | Exact OpenAI models/tools, search and fetching approach, PDF/HTML extraction, model-match evidence, failure behavior, bounded agent execution, API keys, and a small real-device source evaluation. |
 | Before first persisted feature | Initial schema, migrations, API contracts, household authorization, file access, and isolated test resources. |
 | Before scheduling/reminder implementation | Recurrence basis, first-date rules already agreed, completion linkage, time zone, snoozing, recipient departure, and notification scope for the prototype. |
 | Before prototype acceptance | Real text/photo identification and automatic manual retrieval without a mandatory upload; cited troubleshooting; reviewed maintenance; confirmed history writes; passing feature and isolation tests on both platforms. |
