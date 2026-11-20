@@ -1,11 +1,20 @@
 # Homie backend
 
-FastAPI backend in the shared Homie repository. Run the commands below from `backend/`. Backend CI lives at `../.github/workflows/backend.yml`; dependencies and runtime remain independent of the mobile app.
+FastAPI backend in the shared Homie repository. Run the commands below from `backend/`. Backend CI lives at `../.github/workflows/backend.yml`; dependencies and runtime remain independent of the browser client.
 
 ## Local development
 
 ```sh
 cp .env.example .env
+# Use this pip path in the offline workspace:
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m alembic upgrade head
+python -m app.seed
+python -m uvicorn app.main:app --reload
+
+# Or use the locked uv workflow when uv is available:
 uv sync --frozen
 uv run alembic upgrade head
 uv run python -m app.seed
@@ -13,6 +22,10 @@ uv run uvicorn app.main:app --reload
 # Separate terminal:
 uv run python -m app.worker
 ```
+
+After the API starts, open `http://localhost:8000/` for the browser client. The
+default `DATABASE_URL` uses SQLite, so local development does not require
+PostgreSQL, Docker, Redis, or a separate frontend server.
 
 The seed and fixed local token are development fixtures only. Current functionality: scoped inventory, explicit model confirmation and durable research jobs. Live discovery is not implemented; the worker records `unavailable` rather than claiming a manual was found.
 
@@ -40,7 +53,9 @@ Required service variables:
 - `DATABASE_URL=postgresql+psycopg://...` (Supabase PostgreSQL connection, including SSL options appropriate to your connection)
 - `SUPABASE_URL=https://YOUR_PROJECT.supabase.co`
 
-Generate a Railway HTTPS domain for the API. Set its URL as mobile's `EXPO_PUBLIC_API_URL`.
+Generate a Railway HTTPS domain for the API. Set its URL as the browser
+client's `apiUrl` in `web/config.js`; the legacy mobile client uses the same
+value as `EXPO_PUBLIC_API_URL`.
 
 Create a second Railway service from the same repository for the worker. Set its root directory to `/backend` and its existing config-as-code file path to `/backend/railway.worker.toml`; use the same environment/database settings. Deploy API migrations successfully before starting/updating the worker. No HTTP domain or healthcheck is needed for this process. The worker currently only marks discovery unavailable.
 
@@ -50,7 +65,7 @@ Alembic is the sole schema owner. RLS denies direct client access; backend autho
 
 ## Account onboarding
 
-The mobile app signs in with Supabase and sends its access token to the API.
+The browser client signs in with Supabase and sends its access token to the API. The transition mobile client uses the same API contract.
 `GET /v1/me` returns the authenticated user's household (or null).
 `POST /v1/me/household` creates a private household once; retries return the same
 membership. Clients never choose their user ID, household ID, or role.

@@ -1,0 +1,13 @@
+# Pip-compatible local development install for the offline workspace.
+# The uv workflow remains available through pyproject.toml and uv.lock.
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+sqlalchemy>=2.0,<3
+alembic>=1.14,<2
+psycopg[binary]>=3.2,<4
+pydantic-settings>=2.7,<3
+pyjwt[crypto]>=2.10,<3
+pytest>=8,<10
+httpx>=0.28,<1
+ruff>=0.11,<1
+mypy>=1.15,<2

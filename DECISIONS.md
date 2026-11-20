@@ -15,7 +15,7 @@ Example: A user reports that their Shark vacuum has become noisy. The assistant 
 
 - Public product, starting with a free beta with capped AI usage. No billing integration initially; limits are still to be defined.
 - Launch audience: Canada and the US, with an English interface.
-- Installable iOS and Android apps only. No browser version of the product at launch.
+- Browser app first for the offline-compatible prototype. Installable iOS and Android clients remain a later distribution target.
 - Broad inventory: users can catalog any durable item. Detailed troubleshooting and maintenance support initially focus on household appliances, tools, and electronics. Broader category support, including vehicles, comes later.
 - Troubleshooting is the strongest initial experience, supported by inventory and preventive maintenance features.
 - Users can ask for help from a saved item or start with a problem and identify and confirm a new item during the conversation. Adding an inventory item first is not required.
@@ -64,28 +64,30 @@ Example: A user reports that their Shark vacuum has become noisy. The assistant 
 
 | Component | Decision |
 | --- | --- |
-| Mobile apps | React Native with Expo and TypeScript; shared iOS/Android codebase |
+| Browser app | Dependency-free browser client served by the FastAPI backend |
+| Mobile apps | React Native with Expo and TypeScript; transition client retained under `mobile/` |
 | Backend | Python with FastAPI; no C# backend |
 | LLM provider | OpenAI API; exact models and tools remain to be selected |
 | API and background processing | Railway |
-| Database | Supabase-hosted PostgreSQL |
+| Local database | SQLite via SQLAlchemy/Alembic |
+| Deployment database | Supabase-hosted PostgreSQL |
 | Authentication and file storage | Supabase |
-| Supporting public pages | Vercel only if needed for privacy, support, account deletion, or other supporting pages; no product web app |
+| Supporting public pages | Vercel only if needed for privacy, support, account deletion, or other supporting pages |
 | Mobile distribution | Apple App Store and Google Play |
 
 Supabase was selected for the combined database, authentication, and storage offering, rather than database price alone. PostgreSQL and Supabase are not competing database engines: Supabase hosts PostgreSQL. The accepted starting approach is to use the free tier during development and budget for Pro at public launch, subject to checking current pricing and requirements.
 
-Maintainability, scalability, performance on both mobile platforms, and controlled operating costs are priorities. The principal has experience with Python, C#, Terraform, and Azure, but selected Railway and Vercel instead of Azure hosting. Infrastructure-as-code tooling has not yet been selected for this stack.
+Maintainability, scalability, browser performance, eventual mobile performance, and controlled operating costs are priorities. The principal has experience with Python, C#, Terraform, and Azure, but selected Railway and Vercel instead of Azure hosting. Infrastructure-as-code tooling has not yet been selected for this stack.
 
 ## Engineering requirements
 
-- Apply feature-based module separation in both FastAPI and React Native, with thin routes/screens, explicit service boundaries, typed contracts, and small reusable components.
-- Establish backend/frontend testing and CI from initial scaffolding; include integration, household-isolation, contract, and core mobile journey tests.
+- Apply feature-based module separation in FastAPI and the browser client, with thin routes/views, explicit service boundaries, typed contracts, and small reusable components.
+- Establish backend/frontend testing and CI from initial scaffolding; include integration, household-isolation, contract, and core browser journey tests.
 - Follow the detailed maintainability, DRY, security, reliability, and definition-of-done requirements in specification.md section 9.
 - Start with one modular backend and separately running background workers rather than microservices.
 - Run manual discovery, document processing, and reminder preparation outside interactive API requests.
-- Use an API contract to keep the Python backend and TypeScript mobile client aligned.
-- Verify performance on both platforms, including lower-end Android hardware.
+- Use an API contract to keep the Python backend and browser client aligned; keep the transition mobile client compatible with the same contract.
+- Verify browser performance first; restore cross-platform mobile performance checks if native distribution resumes.
 - Reuse verified public research for the same device model across households to reduce costs, while keeping household photos, uploaded files, chats, and maintenance history private to that household. Detailed cache and access-control design remains open.
 
 ## Open decisions for the next session
@@ -107,13 +109,13 @@ The project directory was empty before this decision record was created. No appl
 
 ## Foundation implementation — 2026-09-18
 
-- Repository layout: `backend/` (FastAPI) and `mobile/` (native Expo SDK 55).
+- Repository layout: `backend/` (FastAPI), `web/` (browser client), and `mobile/` (transition Expo client).
 - SQLAlchemy owns persistence; Alembic is the single migration owner. PostgreSQL remains the deployment target; SQLite enables isolated local development without external accounts.
 - Initial inventory requires a name, brand, model and category. These are foundation constraints, pending the incomplete-identification conversational flow.
 - Model confirmation is a separate explicit mutation. Documentation requests require confirmation and are idempotent per household/item.
 - Research state is durable in PostgreSQL/SQLite. The foundation worker returns an honest unavailable state until the real provider pipeline lands. This does not satisfy live-discovery acceptance.
 - PostgreSQL tables use RLS with no direct-client grants/policies; all access goes through authenticated backend services. Local fixture authentication is disabled by default and forbidden outside development.
-- TanStack Query owns mobile server state; openapi-typescript generates contract types. No browser app or public deployment has been created.
+- The browser client uses same-origin fetch calls and local SQLite by default; the transition mobile client continues to use TanStack Query. The browser app is local-only and has not been publicly deployed.
 
 ## Repository and release boundary — user correction, 2026-09-18
 

@@ -1,36 +1,38 @@
 # Homie
 
-Native household care app. Expo / React Native + FastAPI, in one repository: [Ankit-Mehra/homie](https://github.com/Ankit-Mehra/homie).
+Household care app. Browser web client + FastAPI backend, with the original Expo / React Native client retained in `mobile/` during the transition: [Ankit-Mehra/homie](https://github.com/Ankit-Mehra/homie).
 
 Open the repository root or `homie.code-workspace` in VS Code. `backend/` and `mobile/` share Git history and root `.github/workflows/`, while keeping their own dependencies, lockfiles and deployment configuration. Run Git commands from this root or either application directory. See [backend setup / Railway](backend/README.md) and [mobile setup / app stores](mobile/README.md).
 
 ## Current milestone
 
-Implemented: household-scoped inventory API, typed item entry, optional ownership fields in the API, explicit model confirmation, paginated inventory, persistent idempotent discovery requests, a separate worker, and native home / inventory / add / detail screens. TypeScript API types are generated from FastAPI OpenAPI.
+Implemented: household-scoped inventory API, typed item entry, optional ownership fields in the API, explicit model confirmation, paginated inventory, persistent idempotent discovery requests, a separate worker, and a browser home / inventory / add / detail experience. The original native client remains available while the web client becomes the offline-compatible development surface. TypeScript API types are generated from FastAPI OpenAPI.
 
 This is a **foundation preview, not the accepted working prototype**. The worker reports `unavailable`: it does not search, retrieve, verify, or invent manuals. Photo identification, live discovery, grounded conversations, schedule approval, confirmed service history, email-code onboarding, and push delivery remain to be implemented. No paid provider calls occur.
 
 ## Run locally
 
-Python 3.12+ (tested on 3.13), uv, Node 22+, npm.
+Python 3.12+ (tested on 3.13), pip, Node 22+, npm. `uv` remains supported for the locked workflow but is optional in the offline workspace.
 
 ```sh
 cd backend
 cp .env.example .env
-uv sync --frozen
-uv run alembic upgrade head
-uv run python -m app.seed
-uv run uvicorn app.main:app --reload --host 0.0.0.0
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m alembic upgrade head
+python -m app.seed
+python -m uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
-In a second terminal:
+In a second terminal, run the durable worker if you are exercising research jobs:
 
 ```sh
 cd backend
-uv run python -m app.worker
+python -m app.worker
 ```
 
-In a third terminal:
+The legacy native client remains available from a third terminal:
 
 ```sh
 cd mobile
@@ -39,20 +41,24 @@ npm ci
 npm start
 ```
 
-Use an Expo SDK 57-compatible development client or Expo Go. iOS simulator uses localhost; Android emulator uses `http://10.0.2.2:8000`. For a physical device, set `EXPO_PUBLIC_API_URL` to your computer's LAN IP. Keep the local API on a trusted network. There is no browser product.
+For the browser app, open `http://localhost:8000/` after starting FastAPI. The web client is served by the backend and uses the local SQLite database by default; it does not need Expo, a simulator, or a separate frontend server. See [web/README.md](web/README.md).
 
-Local authentication is an explicit development-only fixture. `DEV_AUTH=true` accepts a fixed local token, only with `ENVIRONMENT=development`; it must never be used in a deployed environment. Production authentication validates Supabase asymmetric JWTs and requires a pre-existing membership. Mobile Supabase sign-in and membership provisioning are not implemented yet.
+The legacy mobile client uses an Expo SDK 57-compatible development client or Expo Go. iOS simulator uses localhost; Android emulator uses `http://10.0.2.2:8000`. For a physical device, set `EXPO_PUBLIC_API_URL` to your computer's LAN IP. The browser client is the recommended offline development surface.
+
+Local authentication is an explicit development-only fixture. `DEV_AUTH=true` accepts a fixed local token, only with `ENVIRONMENT=development`; it must never be used in a deployed environment. The browser client can also use Supabase email/password auth when configured. Production authentication validates Supabase asymmetric JWTs and requires a pre-existing membership.
 
 ## Checks and contract generation
 
+The pip-compatible local commands are:
+
 ```sh
 cd backend
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy app
-uv run pytest
-uv run alembic check
-uv run python export_contract.py
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy app
+python -m pytest
+python -m alembic check
+python export_contract.py
 cd ../mobile
 cp ../backend/openapi.json contracts/openapi.json
 npm run generate:api
@@ -61,6 +67,9 @@ npm run lint
 npm run format
 npm test
 ```
+
+When `uv` is available, the equivalent locked commands use `uv run` as shown
+in the CI workflow.
 
 Commit `backend/openapi.json`, its snapshot at `mobile/contracts/openapi.json`, and regenerated `mobile/src/api/schema.ts` together when changing the API contract. CI checks that the snapshots match and verifies generated files for drift. Dependency resolution is locked in uv.lock and package-lock.json.
 
@@ -77,7 +86,7 @@ Run `alembic upgrade head` before starting API/worker processes. Railway can run
 3. Grounded conversation flow and photo attachments; maintenance proposal review and explicit history confirmation.
 4. Resolve scheduling policy; reminders, device QA, end-to-end tests and beta operational gates.
 
-See [specification.md](specification.md) for the full acceptance criteria. Local automated checks do not substitute for iOS/Android device and PostgreSQL integration verification.
+See [specification.md](specification.md) for the full acceptance criteria. Local automated checks do not substitute for browser acceptance, production authentication, or PostgreSQL integration verification.
 
 ### Known verification limits
 

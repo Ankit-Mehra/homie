@@ -9,7 +9,7 @@ This document develops the decisions recorded in [DECISIONS.md](DECISIONS.md). R
 
 Help households catalog durable possessions, troubleshoot problems using relevant sources, and maintain those possessions through approved schedules and reminders.
 
-- Launch installable iOS and Android apps; no browser product.
+- Launch a browser app for the offline-compatible prototype; installable iOS and Android clients remain a later distribution target.
 - Initial audience: Canada and the US; English interface.
 - Catalog any durable item, with detailed support initially focused on household appliances, tools, and electronics. Expanded support for vehicles and other categories comes later.
 - Prioritize troubleshooting, supported by inventory and maintenance history.
@@ -78,11 +78,13 @@ When a user reports completed maintenance in chat, propose the work and completi
 
 | Layer | Choice |
 | --- | --- |
-| Mobile | React Native, Expo, TypeScript |
+| Web client | Dependency-free browser client served by FastAPI |
+| Mobile client | React Native, Expo, TypeScript (transition/legacy client) |
 | API | Python, FastAPI |
 | LLM provider | OpenAI API; exact models and tool configuration remain to be selected |
 | API and background hosting | Railway |
-| Database | Supabase PostgreSQL |
+| Local database | SQLite via SQLAlchemy/Alembic |
+| Deployment database | Supabase PostgreSQL |
 | Authentication and file storage | Supabase |
 | Supporting public pages, if needed | Vercel |
 | Distribution | Apple App Store and Google Play |
@@ -152,7 +154,7 @@ There is enough product detail to design the core prototype journey. Automatic d
 
 ### First working prototype — required core journey
 
-- Build in the agreed Expo/React Native stack.
+- Build in the agreed browser-first stack and keep the API independent of the client runtime.
 - Cover household overview, inventory/item details, add-item flow, conversational troubleshooting with source displays, schedule review, and confirmed maintenance-history recording.
 - Accept a device photo or typed details, ask for missing identifying information, and confirm the model with the user.
 - Use an agentic discovery process to find and retrieve official manuals or support documentation, check applicability to the confirmed model, and prepare the material for grounded OpenAI answers with source references.
@@ -176,7 +178,7 @@ These requirements apply from the first prototype feature to both backend and mo
 
 ### 9.1 Structure and dependency boundaries
 
-- Use one repository with `backend/` and `mobile/` folders in one VS Code workspace, a documented local setup, and independently runnable checks. Start with a modular backend and separate worker process; introduce microservices only for a measured need.
+- Use one repository with `backend/` and `web/` folders in one VS Code workspace, a documented local setup, and independently runnable checks. Keep `mobile/` as a transition client while the browser prototype is the primary development surface. Start with a modular backend and separate worker process; introduce microservices only for a measured need.
 - Organize by product capability: identity/households, inventory, device research, conversations, maintenance, and notifications. Keep module ownership explicit and avoid circular imports.
 - Each module owns its business rules and persistence operations. Cross-module interaction uses explicit service interfaces rather than reaching into another module's private implementation.
 - Keep shared code small: configuration, authentication context, logging, errors, and genuinely reused primitives. Avoid a growing miscellaneous utilities module.
@@ -195,16 +197,16 @@ These requirements apply from the first prototype feature to both backend and mo
 - Use timeouts, bounded retries with backoff, and idempotency for retried jobs and mutations. Avoid blocking network calls or CPU-heavy parsing on the async event loop.
 - Expose versioned business APIs under `/v1`, documented through OpenAPI. Use a consistent error contract with machine-readable code, safe message, and request ID. Define concrete endpoint contracts with each feature before implementation.
 
-### 9.3 React Native / Expo frontend
+### 9.3 Browser frontend
 
-- Use strict TypeScript. Organize feature modules with their screens, components, hooks, API access, and tests; keep navigation route files thin.
-- Separate rendering from business workflows and network calls. Reusable hooks or services coordinate operations; screens compose them and present state.
-- Use a single typed API client derived from the backend OpenAPI contract. Do not independently hand-maintain duplicate server request/response types. Validate untrusted external data at boundaries where generated types offer no runtime protection.
-- Keep server state/cache separate from local UI state. Use one consistent server-state approach and avoid copying server records into multiple stores without a reason.
-- Build shared accessible UI primitives and design tokens for spacing, colors, typography, and feedback. Support screen readers, dynamic text, clear focus/labels, and platform-appropriate interactions.
+- Use semantic HTML, responsive CSS, and accessible browser interactions. Organize feature modules with their views, API access, state coordination, and tests.
+- Separate rendering from business workflows and network calls. Keep API calls in small client functions and let views compose loading, success, and error states.
+- Use a single typed API client or generated contract for server-facing TypeScript code. Do not independently hand-maintain duplicate server request/response types. Validate untrusted external data at boundaries where generated types offer no runtime protection.
+- Keep server state/cache separate from local UI state. Clear household-sensitive caches and browser sessions on sign-out or membership changes.
+- Build shared accessible UI primitives and design tokens for spacing, colors, typography, and feedback. Support keyboard navigation, screen readers, visible focus states, responsive layouts, and reduced motion.
 - Every asynchronous flow handles loading, empty, success, error, retry, and loss of connectivity. Prevent accidental duplicate submissions and never show unsaved or failed work as completed.
-- Put camera, file selection, secure token storage, and notification registration behind testable platform adapters. Clear household-sensitive caches on logout or membership changes.
-- Paginate growing lists and conversations, resize images appropriately, cancel obsolete requests, and measure release-build performance on both platforms before optimizing.
+- Paginate growing lists and conversations, resize images appropriately, cancel obsolete requests, and measure browser performance before optimizing.
+- Keep the transition mobile client under `mobile/` aligned with the same API contract until native distribution is explicitly resumed.
 
 ### 9.4 Data isolation, security, and agent boundaries
 
@@ -222,8 +224,8 @@ These requirements apply from the first prototype feature to both backend and mo
 
 - Set up test runners and CI with the initial scaffolding. Ship tests with each meaningful behavior, not as a final project phase. Add a regression test for fixed behavioral defects where practical.
 - Backend: pytest for business rules and service behavior; API tests through FastAPI's test client or HTTPX; integration tests against isolated PostgreSQL/Supabase-compatible resources for migrations, queries, constraints, transactions, and authorization.
-- Frontend: Jest with jest-expo and React Native Testing Library for user-visible behavior, forms, accessibility, error states, and async flows. Mock native and network boundaries rather than internal implementation details.
-- Add contract checks for OpenAPI/client drift and mobile end-to-end flows with Maestro on Android and iOS. Validate camera permissions, notification permissions, and deep links on actual platforms before release.
+- Frontend: browser tests with Playwright in the coding workspace plus focused unit tests for user-visible behavior, forms, accessibility, error states, and async flows. Mock network boundaries rather than internal implementation details.
+- Add contract checks for OpenAPI/client drift and browser end-to-end flows. If native distribution resumes, restore the mobile-specific Maestro, camera, notification, and deep-link checks before release.
 - Use deterministic fixtures and fake providers in routine CI. Keep real OpenAI/search smoke tests opt-in with explicit cost limits; a live-provider test must not run automatically on every pull request.
 - Maintain AI/retrieval evaluations for exact-model matches, ambiguous labels, regional variants, missing manuals, conflicting sources, grounded citations, image uncertainty, malicious document instructions, and unsafe repair requests. Combine deterministic assertions with reviewed reference cases; do not rely solely on an LLM judge.
 - Required negative tests include cross-household access to records/files/jobs/chats, member attempts at owner-only actions, expired authentication, malformed files, blocked fetch destinations, provider timeouts/rate limits, exhausted budgets, duplicate job delivery, and interrupted processing.
@@ -246,7 +248,7 @@ These requirements apply from the first prototype feature to both backend and mo
 - Reserve/check usage allowance before paid work, reconcile actual usage afterward, and enforce shared limits atomically across workers. Budget exhaustion must stop additional paid research while retaining access to existing inventory and history.
 - Monitor actual provider bills as well as application estimates; application limits alone cannot guarantee an exact total monthly invoice. Set concrete cost allocations and reserves before live usage.
 - Provide health/readiness checks, bounded retry recovery, failed-job inspection, and a documented backup/restore procedure. Test a restore before public beta; do not describe an untested backup configuration as verified recovery.
-- Keep deployments compatible with mobile clients that cannot update immediately. Use additive API/schema changes where possible and test migrations and rollback or forward-recovery paths.
+- Keep deployments compatible with browser clients that may be cached or updated independently. Use additive API/schema changes where possible and test migrations and rollback or forward-recovery paths.
 
 ### Engineering references
 
