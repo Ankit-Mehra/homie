@@ -22,23 +22,6 @@ grounded conversations, maintenance scheduling, confirmed service history,
 email-code onboarding, and push delivery are still planned. No paid provider
 calls are made by the current foundation.
 
-## Desktop compatibility
-
-The primary supported environment is a Linux desktop with a local browser and
-no internet connection.
-
-| Works in the desktop environment | Not provided by the desktop environment |
-| --- | --- |
-| Python 3.12+, FastAPI, Uvicorn, SQLAlchemy, and Alembic | Native iOS or Android builds and simulators |
-| SQLite with no database server | Expo Go, App Store, or Google Play packaging |
-| Dependency-free HTML, CSS, and JavaScript in the bundled browser | Native camera, push notification, and secure-storage testing |
-| Local development using pip packages from the configured mirror | Hosted Supabase, OpenAI, Railway, or other internet-only services |
-| The FastAPI worker and local API tests | PostgreSQL, MariaDB, and Redis services in the desktop workspace |
-
-The browser app does not require a native GUI toolkit, Docker, a separate
-frontend server, or a running database service. The coding workspace can be
-used for additional tooling such as Playwright, PostgreSQL, MariaDB, Redis,
-and native debugging utilities.
 
 ## Repository layout
 
