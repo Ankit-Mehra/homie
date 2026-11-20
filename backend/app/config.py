@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -7,6 +8,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     dev_auth: bool = False
     supabase_url: str = ""
+    supabase_jwt_secret: SecretStr = SecretStr("")
+    supabase_jwt_issuer: str = ""
 
 
 settings = Settings()

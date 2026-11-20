@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Homie",
+    "slug": "homie",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.homie.app" },
+    "android": { "package": "com.homie.app" }
+  }
+}

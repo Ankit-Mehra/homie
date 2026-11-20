@@ -7,10 +7,12 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException
 
 from app.db import engine
+from app.identity.routes import router as identity
 from app.inventory.routes import router as inventory
 from app.research.routes import router as research
 
 app = FastAPI(title="Homie API", version="0.1.0")
+app.include_router(identity)
 app.include_router(inventory)
 app.include_router(research)
 

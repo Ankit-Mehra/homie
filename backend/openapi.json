@@ -5,6 +5,58 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Profile",
+        "operationId": "profile_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/me/household": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Create Household",
+        "operationId": "create_household_v1_me_household_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/items": {
       "get": {
         "tags": [
@@ -581,6 +633,31 @@
           "detail"
         ],
         "title": "JobRead"
+      },
+      "Profile": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "household_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Household Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "household_id"
+        ],
+        "title": "Profile"
       },
       "ValidationError": {
         "properties": {

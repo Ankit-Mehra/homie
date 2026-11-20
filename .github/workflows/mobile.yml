@@ -1,0 +1,24 @@
+name: mobile
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Check API contract snapshot
+        run: node -e "require('node:assert/strict').deepStrictEqual(require('../backend/openapi.json'), require('./contracts/openapi.json'))"
+      - run: npm run generate:api && git diff --exit-code -- src/api/schema.ts
+      - run: npm run typecheck && npm run lint && npm run format && npm test -- --watchman=false
+      - run: npx expo export --platform ios --platform android
+        env:
+          EXPO_NO_TELEMETRY: "1"
+      - run: npm audit --audit-level=high
