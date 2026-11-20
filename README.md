@@ -1,18 +1,62 @@
 # Homie
 
-Household care app. Browser web client + FastAPI backend, with the original Expo / React Native client retained in `mobile/` during the transition: [Ankit-Mehra/homie](https://github.com/Ankit-Mehra/homie).
+Homie is a local-first household care app. The current development surface is
+a browser client served by a FastAPI backend, with SQLite for local persistence.
+The original Expo / React Native client remains in `mobile/` as a transition
+client for a future native release.
 
-Open the repository root or `homie.code-workspace` in VS Code. `backend/` and `mobile/` share Git history and root `.github/workflows/`, while keeping their own dependencies, lockfiles and deployment configuration. Run Git commands from this root or either application directory. See [backend setup / Railway](backend/README.md) and [mobile setup / app stores](mobile/README.md).
+## Current status
 
-## Current milestone
+This repository is a foundation preview, not the accepted production prototype.
+The current implementation includes:
 
-Implemented: household-scoped inventory API, typed item entry, optional ownership fields in the API, explicit model confirmation, paginated inventory, persistent idempotent discovery requests, a separate worker, and a browser home / inventory / add / detail experience. The original native client remains available while the web client becomes the offline-compatible development surface. TypeScript API types are generated from FastAPI OpenAPI.
+- household-scoped inventory APIs;
+- item creation, pagination, and explicit model confirmation;
+- durable, idempotent research jobs and a separate worker process;
+- a browser home, inventory, add-item, and item-detail experience;
+- OpenAPI contract generation for the transition mobile client.
 
-This is a **foundation preview, not the accepted working prototype**. The worker reports `unavailable`: it does not search, retrieve, verify, or invent manuals. Photo identification, live discovery, grounded conversations, schedule approval, confirmed service history, email-code onboarding, and push delivery remain to be implemented. No paid provider calls occur.
+The research worker currently reports `unavailable`. It does not search for,
+retrieve, verify, or invent manuals. Photo identification, live discovery,
+grounded conversations, maintenance scheduling, confirmed service history,
+email-code onboarding, and push delivery are still planned. No paid provider
+calls are made by the current foundation.
 
-## Run locally
+## Desktop compatibility
 
-Python 3.12+ (tested on 3.13), pip, Node 22+, npm. `uv` remains supported for the locked workflow but is optional in the offline workspace.
+The primary supported environment is a Linux desktop with a local browser and
+no internet connection.
+
+| Works in the desktop environment | Not provided by the desktop environment |
+| --- | --- |
+| Python 3.12+, FastAPI, Uvicorn, SQLAlchemy, and Alembic | Native iOS or Android builds and simulators |
+| SQLite with no database server | Expo Go, App Store, or Google Play packaging |
+| Dependency-free HTML, CSS, and JavaScript in the bundled browser | Native camera, push notification, and secure-storage testing |
+| Local development using pip packages from the configured mirror | Hosted Supabase, OpenAI, Railway, or other internet-only services |
+| The FastAPI worker and local API tests | PostgreSQL, MariaDB, and Redis services in the desktop workspace |
+
+The browser app does not require a native GUI toolkit, Docker, a separate
+frontend server, or a running database service. The coding workspace can be
+used for additional tooling such as Playwright, PostgreSQL, MariaDB, Redis,
+and native debugging utilities.
+
+## Repository layout
+
+```text
+backend/   FastAPI API, migrations, seed data, and research worker
+web/       Dependency-free browser client served by FastAPI
+mobile/    Legacy/transition Expo and React Native client
+```
+
+The browser client is served from the same origin as the API. This keeps local
+development simple and avoids a separate frontend build or CORS configuration.
+
+## Run the browser app locally
+
+Requirements: Python 3.12 or newer and pip. Node/npm are only needed for the
+transition mobile client.
+
+From the repository root:
 
 ```sh
 cd backend
@@ -22,17 +66,53 @@ python3 -m venv .venv
 pip install -r requirements-dev.txt
 python -m alembic upgrade head
 python -m app.seed
-python -m uvicorn app.main:app --reload --host 0.0.0.0
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-In a second terminal, run the durable worker if you are exercising research jobs:
+Open <http://127.0.0.1:8000/> in the desktop browser. The API serves the
+browser client from `web/` and creates the local SQLite database at
+`backend/homie.db`.
+
+To exercise the durable research worker, use a second terminal:
 
 ```sh
 cd backend
+. .venv/bin/activate
 python -m app.worker
 ```
 
-The legacy native client remains available from a third terminal:
+The worker is optional for the browser inventory flow and currently records
+research as unavailable until a real provider pipeline is implemented.
+
+## Local configuration and authentication
+
+The default `backend/.env.example` is suitable for offline development:
+
+```dotenv
+DATABASE_URL=sqlite:///./homie.db
+ENVIRONMENT=development
+DEV_AUTH=true
+SUPABASE_URL=
+```
+
+`DEV_AUTH=true` enables the fixed local development token only when
+`ENVIRONMENT=development`. It must never be enabled in a deployed environment.
+The `.env` files are ignored by Git and must not be committed.
+
+The browser client can use Supabase email/password authentication when a
+deployed instance is configured. Only a public Supabase URL and anon/publishable
+key belong in [`web/config.js`](web/config.js); never put a service-role key,
+JWT signing secret, or database credential in the browser client.
+
+More backend deployment and authentication details are in
+[`backend/README.md`](backend/README.md). The browser-specific notes are in
+[`web/README.md`](web/README.md).
+
+## Optional transition mobile client
+
+The native client is retained for API compatibility and future distribution.
+It requires an Expo-compatible development environment and is not needed for
+the desktop browser workflow:
 
 ```sh
 cd mobile
@@ -41,24 +121,25 @@ npm ci
 npm start
 ```
 
-For the browser app, open `http://localhost:8000/` after starting FastAPI. The web client is served by the backend and uses the local SQLite database by default; it does not need Expo, a simulator, or a separate frontend server. See [web/README.md](web/README.md).
+Native iOS/Android rendering, device permissions, release builds, and app-store
+submission are not supported by the browser-only desktop environment.
 
-The legacy mobile client uses an Expo SDK 57-compatible development client or Expo Go. iOS simulator uses localhost; Android emulator uses `http://10.0.2.2:8000`. For a physical device, set `EXPO_PUBLIC_API_URL` to your computer's LAN IP. The browser client is the recommended offline development surface.
+## Checks and API contract
 
-Local authentication is an explicit development-only fixture. `DEV_AUTH=true` accepts a fixed local token, only with `ENVIRONMENT=development`; it must never be used in a deployed environment. The browser client can also use Supabase email/password auth when configured. Production authentication validates Supabase asymmetric JWTs and requires a pre-existing membership.
-
-## Checks and contract generation
-
-The pip-compatible local commands are:
+Run backend checks from `backend/` after activating `.venv`:
 
 ```sh
-cd backend
 python -m ruff check .
 python -m ruff format --check .
 python -m mypy app
 python -m pytest
 python -m alembic check
 python export_contract.py
+```
+
+When the API contract changes, update the transition mobile snapshots and types:
+
+```sh
 cd ../mobile
 cp ../backend/openapi.json contracts/openapi.json
 npm run generate:api
@@ -68,26 +149,27 @@ npm run format
 npm test
 ```
 
-When `uv` is available, the equivalent locked commands use `uv run` as shown
-in the CI workflow.
-
-Commit `backend/openapi.json`, its snapshot at `mobile/contracts/openapi.json`, and regenerated `mobile/src/api/schema.ts` together when changing the API contract. CI checks that the snapshots match and verifies generated files for drift. Dependency resolution is locked in uv.lock and package-lock.json.
+The repository also supports the locked `uv` workflow when `uv` is available.
+The pip workflow above is the intended path for the offline desktop workspace.
 
 ## Persistence and deployment boundary
 
-Alembic is the sole schema migration owner. SQLite is a local convenience; configure `DATABASE_URL=postgresql+psycopg://...` for Supabase PostgreSQL. All tables have RLS enabled on PostgreSQL and intentionally have no direct-client policies: the backend alone accesses them with a server database role. Backend household authorization remains mandatory. Do not expose privileged database credentials to mobile.
+SQLite is the local development database. PostgreSQL remains the deployment and
+integration-test option, configured with a `postgresql+psycopg://` URL. Alembic
+is the sole schema migration owner. The backend enforces household authorization;
+privileged database credentials are never exposed to browser or mobile clients.
 
-Run `alembic upgrade head` before starting API/worker processes. Railway can run the backend and worker as separate services using the same database. Deployment has not been performed or verified. To reverse the initial migration in disposable development databases, `alembic downgrade base` destroys all tables; back up data first. Prefer forward migrations once real data exists. Backup/restore and beta privacy policies are not yet validated.
+The API and worker can be deployed as separate Railway services with a shared
+PostgreSQL database, but deployment has not been performed or verified. See
+[`backend/README.md`](backend/README.md) for the deployment boundary.
 
-## Next milestones
+## Security and repository hygiene
 
-1. Supabase email-code onboarding, secure session storage, household provisioning and runtime response validation.
-2. Bounded OpenAI identification and discovery adapters, safe document retrieval, provenance and exact-model verification, shared budget reservations, real-device evaluation. No uploads required for the acceptance journey.
-3. Grounded conversation flow and photo attachments; maintenance proposal review and explicit history confirmation.
-4. Resolve scheduling policy; reminders, device QA, end-to-end tests and beta operational gates.
+The root and application-level ignore rules exclude local environment files,
+SQLite databases, virtual environments, caches, Expo output, coverage data,
+and `node_modules`. Keep credentials in local environment files or deployment
+secret stores; do not commit them to the repository.
 
-See [specification.md](specification.md) for the full acceptance criteria. Local automated checks do not substitute for browser acceptance, production authentication, or PostgreSQL integration verification.
-
-### Known verification limits
-
-Initial npm audit: 10 moderate findings through Expo's `xcode → uuid` build-tool dependency chain; zero high/critical findings. No forced major upgrades applied. Reassess and resolve before distribution. PostgreSQL migration checks are configured in CI; local verification used SQLite. Native device rendering, performance and release builds have not yet been verified.
+See [`specification.md`](specification.md) for the full acceptance criteria and
+[`DECISIONS.md`](DECISIONS.md) for the recorded product and architecture
+decisions.
