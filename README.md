@@ -120,17 +120,12 @@ python -m alembic check
 python export_contract.py
 ```
 
-When the API contract changes, update the transition mobile snapshots and types:
-
-```sh
-cd ../mobile
-cp ../backend/openapi.json contracts/openapi.json
-npm run generate:api
-npm run typecheck
-npm run lint
-npm run format
-npm test
-```
+The browser client does not require generated frontend types or a separate
+frontend test command. The transition native client has independent contract
+generation and test instructions in [`mobile/README.md`](mobile/README.md); run
+those only when deliberately maintaining the native client in a
+native-capable environment. They are not required for the offline browser
+workflow.
 
 The repository also supports the locked `uv` workflow when `uv` is available.
 The pip workflow above is the intended path for the offline desktop workspace.
